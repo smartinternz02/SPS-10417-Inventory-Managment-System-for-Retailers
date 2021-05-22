@@ -17,6 +17,19 @@ link["index"] = '/summary'
 def init_database():
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Users(id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    businesstype TEXT NOT NULL,
+                    phone INTEGER NOT NULL,
+                    address VARCHAR NOT NULL,
+                    city TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    country TEXT NOT NULL,
+                    email VARCHAR NOT NULL,
+                    password VARCHAR NOT NULL
+                    );
+    """)
 
 
     cursor.execute("""
