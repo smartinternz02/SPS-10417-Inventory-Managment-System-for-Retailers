@@ -1,37 +1,40 @@
 import os
 import json
 import sqlite3
-import flask
-from flask import Flask, url_for, request, redirect,render_template,flash
+from flask import Flask, url_for, request, redirect,render_template
 from flask import render_template as render
 from flask import session
 import re
-DATABASE_NAME = 'inventory.sqlite'
-app = Flask(__name__)
-app.config.from_mapping(
-    SECRET_KEY='inventory',
-    DATABASE=os.path.join(app.instance_path, 'database', DATABASE_NAME),
-)
 link = {x: x for x in ["summary","location", "product", "movement", "logout"]}
 link["index"] = '/summary'
+app = Flask(__name__)    
+def init_userdb():
+          DATABASE_NAME = "Users.sqlite"
+          db = sqlite3.connect(DATABASE_NAME) 
+          cursor = db.cursor()   
+          cursor.execute("""
+    CREATE TABLE IF NOT EXISTS Users(
+                    id INTEGER PRIMARY KEY,
+                    name VARCHAR(20) NOT NULL,
+                    businesstype VARCHAR(20),
+                    phone INTEGER(10),
+                    address VARCHAR(30),
+                    city VARCHAR(10),
+                    state VARCHAR(10),
+                    country VARCHAR(10),
+                    email VARCHAR(20),
+                    password VARCHAR(10)
+                    );
+    """)                                                                                                 
 def init_database():
+    DATABASE_NAME = 'inventory.sqlite'
+    app.config.from_mapping(
+    SECRET_KEY='inventory',
+    DATABASE=os.path.join(app.instance_path, 'database', DATABASE_NAME),
+    )
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Users(id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    businesstype TEXT NOT NULL,
-                    phone INTEGER NOT NULL,
-                    address VARCHAR NOT NULL,
-                    city TEXT NOT NULL,
-                    state TEXT NOT NULL,
-                    country TEXT NOT NULL,
-                    email VARCHAR NOT NULL,
-                    password VARCHAR NOT NULL
-                    );
-    """)
-
-
+    
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS products(prod_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     prod_name TEXT UNIQUE NOT NULL,
@@ -70,15 +73,14 @@ def init_database():
     db.commit()
 
 @app.route("/")
-
-    
 @app.route("/login", methods =['GET', 'POST'])
 def login():
+    db = sqlite3.connect('Users.sqlite')
+    init_userdb()
     msg = ''
     if request.method == 'POST' :
         name = request.form['name']
         password = request.form['password']
-        db = sqlite3.connect(DATABASE_NAME)
         cursor = db.cursor()
         cursor.execute('SELECT * FROM Users WHERE name = ? AND password = ?',(name, password ))
         account = cursor.fetchone()
@@ -99,6 +101,10 @@ def home():
 @app.route('/register', methods =['GET', 'POST'])
 def register():
     msg = ''
+    User_db = 'Users.sqlite'
+    db=sqlite3.connect(User_db)
+    init_userdb()
+    init_database()
     if request.method == 'POST' :
         name = request.form['name']
         businesstype = request.form['businesstype']
@@ -109,7 +115,7 @@ def register():
         country = request.form['country']   
         email = request.form['email']
         password = request.form['password']
-        db = sqlite3.connect(DATABASE_NAME)
+        db = sqlite3.connect(User_db)
         cursor = db.cursor()
         cursor.execute('SELECT * FROM Users WHERE name = ? AND password = ?',(name, password ))
         account = cursor.fetchone()
@@ -124,7 +130,7 @@ def register():
             cursor.execute('INSERT INTO Users VALUES (NULL,?,?,?,?,?,?,?,?,?)', (name,businesstype,phone,address,city,state,country,email,password ))
             db.commit()
             msg = 'You have successfully registered !'
-            return redirect(url_for('login'))
+            return render_template('login.html')
     elif request.method == 'POST':
         msg = 'Please fill out the form !'
     return render_template('register.html', msg = msg)
@@ -140,6 +146,9 @@ def logout():
 @app.route('/summary')
 def summary():
     init_database()
+    DATABASE_NAME = 'inventory.sqlite'
+    db = sqlite3.connect(DATABASE_NAME)
+    cursor = db.cursor()
     msg = None
     q_data, warehouse, products = None, None, None
     db = sqlite3.connect(DATABASE_NAME)
@@ -164,6 +173,8 @@ def summary():
 @app.route('/product', methods=['POST', 'GET'])
 def product():
     init_database()
+    DATABASE_NAME = 'inventory.sqlite'
+    db = sqlite3.connect(DATABASE_NAME)
     msg = None
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
@@ -202,6 +213,7 @@ def product():
 @app.route('/location', methods=['POST', 'GET'])
 def location():
     init_database()
+    DATABASE_NAME = 'inventory.sqlite'
     msg = None
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
@@ -238,6 +250,7 @@ def location():
 @app.route('/movement', methods=['POST', 'GET'])
 def movement():
     init_database()
+    DATABASE_NAME = 'inventory.sqlite'
     msg = None
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
@@ -384,6 +397,8 @@ def movement():
 
 @app.route('/delete')
 def delete():
+    DATABASE_NAME = 'inventory.sqlite'
+    db = sqlite3.connect(DATABASE_NAME)
     type_ = request.args.get('type')
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
@@ -430,6 +445,8 @@ def delete():
 
 @app.route('/edit', methods=['POST', 'GET'])
 def edit():
+    DATABASE_NAME = 'inventory.sqlite'
+    db = sqlite3.connect(DATABASE_NAME)
     type_ = request.args.get('type')
     db = sqlite3.connect(DATABASE_NAME)
     cursor = db.cursor()
@@ -462,4 +479,4 @@ def edit():
 
     return render(url_for(type_))
 if __name__=='__main__':
-    app.run(host='0.0.0.0',debug=True,port=2000)
+    app.run(host='0.0.0.0',debug=True,port=8080)
